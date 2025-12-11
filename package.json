@@ -5,22 +5,23 @@
   "keywords": [],
   "main": "src/index.tsx",
   "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-redux": "9.2.0",
-    "react-router-dom": "7.9.6",
-    "@reduxjs/toolkit": "2.10.1",
-    "firebase": "12.6.0",
-    "axios": "1.13.2",
     "@react-google-maps/api": "2.20.7",
-    "react-leaflet-markercluster": "5.0.0-rc.0"
+    "@reduxjs/toolkit": "2.10.1",
+    "axios": "1.13.2",
+    "firebase": "12.6.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "react-leaflet-markercluster": "5.0.0-rc.0",
+    "react-redux": "9.2.0",
+    "react-router-dom": "7.9.6"
   },
   "devDependencies": {
+    "@types/node": "^25.0.0",
     "@types/react": "19.0.0",
     "@types/react-dom": "19.0.0",
-    "typescript": "5.7.2",
-    "vite": "^5.0.11",
-    "@vitejs/plugin-react": "^4.2.1"
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^5.7.2",
+    "vite": "^7.2.7"
   },
   "scripts": {
     "dev": "vite",
