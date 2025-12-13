@@ -28,7 +28,7 @@ export default function ProductCard({ product }) {
 
   return (
     <div className="product-card">
-      <img src={product.image} alt={product.title} />
+      <img src={product.thumbnail || product.images?.[0]} alt={product.title} />
 
       <h3>{product.title}</h3>
       <p className="price">₹{product.price}</p>

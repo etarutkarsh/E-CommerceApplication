@@ -1,39 +1,37 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
+import { saveUserDetails, loginUser } from "./authThunks";
 
-const initialState = {
-  user: null,
-  status: "idle",
-  error: null,
-};
+const saved = JSON.parse(localStorage.getItem("userDetails"));
 
-export const setUser = createAsyncThunk("auth/setUser", async () => {
-  return user;
-});
+const initialState = { user: saved || null };
 
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
+    setUser(state, action) {
+      state.user = action.payload;
+      localStorage.setItem("userDetails", JSON.stringify(action.payload));
+    },
+
     logout(state) {
       state.user = null;
-      state.status = "idle";
+      localStorage.removeItem("userDetails");
     },
   },
+
   extraReducers: (builder) => {
     builder
-      .addCase(setUser.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(setUser.fulfilled, (state, action) => {
+      .addCase(saveUserDetails.fulfilled, (state, action) => {
         state.user = action.payload;
-        state.status = "succeeded";
+        localStorage.setItem("userDetails", JSON.stringify(action.payload));
       })
-      .addCase(setUser.rejected, (state, action) => {
-        state.error = action.error.message;
-        state.status = "failed";
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.user = { ...state.user, ...action.payload };
+        localStorage.setItem("userDetails", JSON.stringify(state.user));
       });
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { setUser, logout } = authSlice.actions;
 export default authSlice.reducer;

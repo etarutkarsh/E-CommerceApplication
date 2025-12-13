@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchProductById } from "../features/products/productsSlice";
+import { fetchProductsById } from "../features/products/productsSlice";
 import ProductCard from "../components/ProductCard";
 
 export default function ProductDetail() {
@@ -11,7 +11,7 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (!product) {
-      dispatch(fetchProductById(id));
+      dispatch(fetchProductsById(id));
     }
   }, [dispatch, id, product]);
 

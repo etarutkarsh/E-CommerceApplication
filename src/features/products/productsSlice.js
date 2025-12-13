@@ -11,7 +11,7 @@ const initialState = {
 export const fetchProducts = createAsyncThunk(
   "products/fetchProducts",
   async () => {
-    const res = await axios.get("https://fakestoreapi.com/products");
+    const res = await axios.get("https://dummyjson.com/products");
     return res.data;
   }
 );
@@ -19,7 +19,7 @@ export const fetchProducts = createAsyncThunk(
 export const fetchProductsById = createAsyncThunk(
   "products/fetchProductById",
   async (id) => {
-    const res = await axios.get(`https://fakestoreapi.com/products/${id}`);
+    const res = await axios.get(`https://dummyjson.com/products/${id}`);
     return res.data;
   }
 );
@@ -39,8 +39,9 @@ const productsSlice = createSlice({
     })
       .addCase(fetchProducts.fulfilled, (s, a) => {
         s.status = "succeeded";
-        s.items = a.payload;
-        a.payload.forEach((p) => (s.byId[p.id] = p));
+        const list = a.payload.products;
+        s.items = list;
+        list.forEach((p) => (s.byId[p.id] = p));
       })
       .addCase(fetchProducts.rejected, (s, a) => {
         s.status = "failed";

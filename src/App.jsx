@@ -2,24 +2,27 @@ import "./styles.css";
 import React, { Suspense, lazy, useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import Wishlist from "./pages/Wishlist";
 
+import Wishlist from "./pages/Wishlist";
+import SignupDetails from "./pages/SignupDetails";
 import FloatingCart from "./components/FloatingCart";
 import CartDrawer from "./components/CartDrawer";
+
+import ProtectedRoute from "./routes/ProtectedRoute";
+import PublicRoute from "./routes/PublicRoute";
 
 import {
   fetchProducts,
   setProductsFromStatic,
 } from "./features/products/productsSlice";
 
-
 import Header from "./components/Header";
 import LoadingFallback from "./components/LoadingFallback";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Checkout from "./pages/Checkout";
+import CartPage from "./pages/CartPage";
 
-// Lazy-loaded page
 const ProductDetail = lazy(() => import("./pages/ProductDetail.lazy"));
 
 export default function App() {
@@ -55,32 +58,78 @@ export default function App() {
 
   return (
     <div className="App">
-      <Header />
+      <Header onOpenCart={() => setDrawerOpen(true)} />
+
       {drawerOpen && (
         <div
           className="drawer-backdrop"
           onClick={() => setDrawerOpen(false)}
         ></div>
       )}
-      {/* CART DRAWER */}
-      <CartDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
-      {/* FLOATING CART BUTTON (OPEN DRAWER) */}
+      <CartDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       <FloatingCart onOpenDrawer={() => setDrawerOpen(true)} />
 
-      {/* PAGE ROUTES */}
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
+          {/* Redirect root to dashboard */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          {/* PUBLIC ROUTES */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
 
-          {/* PRODUCT DETAIL */}
-          <Route path="/products/:id" element={<ProductDetail />} />
+          <Route
+            path="/signup-details"
+            element={
+              <PublicRoute>
+                <SignupDetails />
+              </PublicRoute>
+            }
+          />
 
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/wishlist" element={<Wishlist />} />
+          {/* PROTECTED ROUTES */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/wishlist"
+            element={
+              <ProtectedRoute>
+                <Wishlist />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute>
+                <Checkout />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/products/:id"
+            element={
+              <ProtectedRoute>
+                <ProductDetail />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </Suspense>
     </div>

@@ -1,4 +1,6 @@
 import OpenStreetMap from "../components/OpenStreetMap";
+import Button from "@mui/material/Button";
+
 
 import React, { useState, useMemo, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
@@ -24,7 +26,7 @@ export default function Checkout() {
   const cartItems = useSelector((s) => s.cart.items);
   const productsById = useSelector((s) => s.products.byId);
 
-  const checkoutItem = JSON.parse(
+  let checkoutItem = JSON.parse(
     sessionStorage.getItem("checkout_item") || "null"
   );
 
@@ -83,174 +85,174 @@ export default function Checkout() {
       }
     );
   }, []);
+  console.log("CHECKOUT DATA:", {
+    cartItems,
+    productsById,
+    items,
+  });
 
-  return (
-    <div style={{ padding: 20, maxWidth: 720, margin: "auto" }}>
-      <h2>Checkout</h2>
+return (
+  <div className="checkout-wrapper">
+    <div className="checkout-card">
+      <h2 className="checkout-title">Checkout</h2>
 
-      <h3>Items</h3>
+      {/* ITEMS LIST */}
+      <div className="checkout-section">
+        <h3 className="section-title">Your Items</h3>
 
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {items.map((it) => {
-          const p = productsById[it.productId] || {
-            title: "(Unknown Product)",
-            price: 0,
-            image: "https://via.placeholder.com/80",
-          };
+        <ul className="checkout-items">
+          {items.map((it) => {
+            const p = productsById[it.productId] || {
+              title: "(Unknown Product)",
+              price: 0,
+              image: "https://via.placeholder.com/80",
+            };
 
-          return (
-            <li
-              key={it.productId}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-                marginBottom: 20,
-                paddingBottom: 10,
-                borderBottom: "1px solid #ccc",
-              }}
-            >
-              {/* Product Image */}
-              <img
-                src={p.image}
-                alt={p.title}
-                style={{
-                  width: 80,
-                  height: 80,
-                  objectFit: "cover",
-                  borderRadius: 8,
-                }}
-              />
+            return (
+              <li key={it.productId} className="checkout-item">
+                <img
+                  src={p.thumbnail || p.images?.[0]}
+                  alt={p.title}
+                  className="item-img"
+                />
 
-              {/* Product Details */}
-              <div style={{ flex: 1 }}>
-                <strong>{p.title}</strong>
-                <p>₹{p.price}</p>
+                <div className="item-info">
+                  <p className="item-title">{p.title}</p>
+                  <p className="item-price">₹{p.price}</p>
 
-                {/* Quantity Controls */}
-                {checkoutItem ? (
-                  <p>Qty: {it.qty}</p>
-                ) : (
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 10 }}
-                  >
-                    <button
-                      onClick={() =>
-                        handleQtyChange(it.productId, Math.max(1, it.qty - 1))
-                      }
-                    >
-                      -
-                    </button>
+                  {/* Quantity Controls */}
+                  {checkoutItem ? (
+                    <p className="item-qty">Qty: {it.qty}</p>
+                  ) : (
+                    <div className="qty-box">
+                      <button
+                        className="qty-btn"
+                        onClick={() =>
+                          handleQtyChange(it.productId, Math.max(1, it.qty - 1))
+                        }
+                      >
+                        -
+                      </button>
 
-                    <span>{it.qty}</span>
+                      <span className="qty-count">{it.qty}</span>
 
-                    <button
-                      onClick={() => handleQtyChange(it.productId, it.qty + 1)}
-                    >
-                      +
-                    </button>
-                  </div>
-                )}
-              </div>
+                      <button
+                        className="qty-btn"
+                        onClick={() =>
+                          handleQtyChange(it.productId, it.qty + 1)
+                        }
+                      >
+                        +
+                      </button>
 
-              {/* Price */}
-              <p style={{ fontWeight: "bold" }}>₹{p.price * it.qty}</p>
-            </li>
-          );
-        })}
-      </ul>
+                      {/* REMOVE BUTTON */}
+                      <Button
+                        variant="contained"
+                        color="error"
+                        size="small"
+                        onClick={() => dispatch(removeFromCart(it.productId))}
+                        sx={{ marginLeft: "12px", height: "36px" }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  )}
+                </div>
 
-      <p>
-        <strong>Total: ₹{total}</strong>
-      </p>
+                <p className="item-total">₹{p.price * it.qty}</p>
+                
+              </li>
+            );
+          })}
+        </ul>
 
-      <h3>Delivery & Address</h3>
+        <div className="checkout-total">
+          <span>Total Amount</span>
+          <strong>₹{total.toFixed(2)}</strong>
+        </div>
+      </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handlePayment();
-        }}
-      >
-        <div>
-          <label>Name</label>
-          <br />
+      {/* ADDRESS FORM */}
+      <div className="checkout-section">
+        <h3 className="section-title">Delivery Details</h3>
+
+        <form
+          className="checkout-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handlePayment();
+          }}
+        >
           <input
             name="name"
+            placeholder="Full Name"
             value={form.name}
             onChange={handleChange}
             required
           />
-        </div>
 
-        <div>
-          <label>Phone</label>
-          <br />
           <input
             name="phone"
+            placeholder="Phone Number"
             value={form.phone}
             onChange={handleChange}
             required
           />
-        </div>
 
-        <div>
-          <label>Address</label>
-          <br />
           <textarea
             name="addressLine1"
+            placeholder="Complete Address"
             value={form.addressLine1}
             onChange={handleChange}
             required
           />
-        </div>
 
-        <div>
-          <label>City</label>
-          <br />
-          <input
-            name="city"
-            value={form.city}
-            onChange={handleChange}
-            required
-          />
-        </div>
+          <div className="form-row">
+            <input
+              name="city"
+              placeholder="City"
+              value={form.city}
+              onChange={handleChange}
+              required
+            />
+            <input
+              name="state"
+              placeholder="State"
+              value={form.state}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-        <div>
-          <label>State</label>
-          <br />
-          <input
-            name="state"
-            value={form.state}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div>
-          <label>Pincode</label>
-          <br />
           <input
             name="pincode"
+            placeholder="Pincode"
             value={form.pincode}
             onChange={handleChange}
             required
           />
-        </div>
 
-        <hr />
-        <button type="submit">Pay ₹{total} (Mock Payment)</button>
-      </form>
-      <h3>Your Location & Store Route</h3>
+          <button type="submit" className="pay-btn">
+            Pay ₹{total.toFixed(2)}
+          </button>
+        </form>
+      </div>
 
-      {userLocation ? (
-        <OpenStreetMap
-          userLocation={userLocation}
-          storeLocation={storeLocation}
-        />
-      ) : (
-        <p>Fetching location...</p>
-      )}
+      {/* MAP SECTION */}
+      <div className="checkout-section">
+        <h3 className="section-title">Delivery Route</h3>
+
+        {userLocation ? (
+          <OpenStreetMap
+            userLocation={userLocation}
+            storeLocation={storeLocation}
+          />
+        ) : (
+          <p>Fetching your location...</p>
+        )}
+      </div>
     </div>
-  );
+  </div>
+);
+
 }

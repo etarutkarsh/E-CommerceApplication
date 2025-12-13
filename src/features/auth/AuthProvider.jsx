@@ -1,22 +1,28 @@
+// src/features/auth/AuthProvider.jsx
 import React, { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { setUser } from "./authSlice";
-import { initializeApp, getApps, getApp } from "firebase/app";
 
+import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
-  signInWithPopup,
   GoogleAuthProvider,
   GithubAuthProvider,
   onAuthStateChanged,
+  signInWithPopup,
   signOut,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from "firebase/auth";
 
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../firebaseClient";
+
+import { setUser as setUserAction } from "./authSlice";
 import { mergeGuestDataOnLogin } from "../cart/cartSlice";
 
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// -------------------------
+// FIREBASE CONFIG
+// -------------------------
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -30,50 +36,70 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 
+// Providers
 const googleProvider = new GoogleAuthProvider();
 const githubProvider = new GithubAuthProvider();
 
-const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
-const loginWithGithub = () => signInWithPopup(auth, githubProvider);
-const logoutUser = () => signOut(auth);
-
-const loginWithEmailPassword = (email, password) =>
-  signInWithEmailAndPassword(auth, email, password);
-
-const signUpWithEmailPassword = (email, password) =>
-  createUserWithEmailAndPassword(auth, email, password);
-
+// -------------------------------------------------------
+// MAIN PROVIDER — ONLY HANDLES AUTH + USER LOADING
+// -------------------------------------------------------
 export default function AuthProvider({ children }) {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (fbUser) => {
-      if (fbUser) {
-        const user = {
-          uid: fbUser.uid,
-          displayName: fbUser.displayName,
-          email: fbUser.email,
-          providerData: fbUser.providerData,
-        };
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (!fbUser) {
+        dispatch(setUserAction(null));
+        return;
+      }
 
-        dispatch(setUser(user));
-        await dispatch(mergeGuestDataOnLogin(user));
-      } else {
-        dispatch(setUser(null));
+      // Basic Firebase User
+      const firebaseBasic = {
+        uid: fbUser.uid,
+        email: fbUser.email,
+        displayName: fbUser.displayName,
+        provider: fbUser.providerData?.[0]?.providerId,
+      };
+
+      // Try loading Firestore profile (safe)
+      let profile = {};
+
+      try {
+        const ref = doc(db, "users", fbUser.uid);
+        const snap = await getDoc(ref);
+        if (snap.exists()) profile = snap.data();
+      } catch (err) {
+        console.warn("Firestore profile load skipped:", err.message);
+      }
+
+      const finalUser = { ...firebaseBasic, ...profile };
+
+      // Save user in Redux
+      dispatch(setUserAction(finalUser));
+
+      // Merge guest cart -> user cart
+      try {
+        dispatch(mergeGuestDataOnLogin(finalUser));
+      } catch (err) {
+        console.warn("Cart merge failed:", err.message);
       }
     });
 
-    return () => unsub();
+    return () => unsubscribe();
   }, [dispatch]);
 
   return <>{children}</>;
 }
 
-export {
-  auth,
-  loginWithGoogle,
-  loginWithGithub,
-  loginWithEmailPassword,
-  signUpWithEmailPassword,
-  logoutUser,
-};
+// -------------------------------------------------------
+// AUTH HELPERS
+// -------------------------------------------------------
+export const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
+export const loginWithGithub = () => signInWithPopup(auth, githubProvider);
+export const logoutUser = () => signOut(auth);
+
+export const loginWithEmailPassword = (email, password) =>
+  signInWithEmailAndPassword(auth, email, password);
+
+export const signUpWithEmailPassword = (email, password) =>
+  createUserWithEmailAndPassword(auth, email, password);
