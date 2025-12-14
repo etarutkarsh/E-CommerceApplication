@@ -1,33 +1,32 @@
 import "./styles.css";
 import React, { Suspense, lazy, useEffect, useState } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
 import Wishlist from "./pages/Wishlist";
 import SignupDetails from "./pages/SignupDetails";
-import FloatingCart from "./components/FloatingCart";
-import CartDrawer from "./components/CartDrawer";
-
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
+import Signup from "./pages/Signup";
 
 import {
   fetchProducts,
   setProductsFromStatic,
 } from "./features/products/productsSlice";
 
-import Header from "./components/Header";
 import LoadingFallback from "./components/LoadingFallback";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Checkout from "./pages/Checkout";
-import CartPage from "./pages/CartPage";
 
+import MainLayout from "./layouts/MainLayout";
+import AuthLayout from "./layouts/AuthLayout";
+
+const LandingPage = lazy(() => import("./pages/LandingPage.jsx"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail.lazy"));
 
 export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-
   const dispatch = useDispatch();
   const productsStatus = useSelector((s) => s.products.status);
 
@@ -36,20 +35,8 @@ export default function App() {
       dispatch(fetchProducts()).catch(() => {
         dispatch(
           setProductsFromStatic([
-            {
-              id: "p1",
-              title: "Sample T-shirt",
-              price: 299,
-              description: "Comfortable cotton tee",
-              image: "images/tshirt.jpg",
-            },
-            {
-              id: "p2",
-              title: "Sneakers",
-              price: 2499,
-              description: "Stylish sneakers",
-              image: "/images/sneakers.jpg",
-            },
+            { id: "p1", title: "Sample T-shirt", price: 299 },
+            { id: "p2", title: "Sneakers", price: 2499 },
           ])
         );
       });
@@ -58,48 +45,52 @@ export default function App() {
 
   return (
     <div className="App">
-      <Header onOpenCart={() => setDrawerOpen(true)} />
-
-      {drawerOpen && (
-        <div
-          className="drawer-backdrop"
-          onClick={() => setDrawerOpen(false)}
-        ></div>
-      )}
-
-      <CartDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-      <FloatingCart onOpenDrawer={() => setDrawerOpen(true)} />
-
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
-          {/* Redirect root to dashboard */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* 🌍 LANDING PAGE (PUBLIC, NO HEADER) */}
+          <Route
+            path="/"
+            element={
+              <PublicRoute>
+                <LandingPage />
+              </PublicRoute>
+            }
+          />
 
-          {/* PUBLIC ROUTES */}
+          {/* 🔐 AUTH PAGES */}
           <Route
             path="/login"
             element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
+              <AuthLayout>
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              </AuthLayout>
             }
           />
 
           <Route
-            path="/signup-details"
+            path="/signup"
             element={
-              <PublicRoute>
-                <SignupDetails />
-              </PublicRoute>
+              <AuthLayout>
+                <PublicRoute>
+                  <Signup />
+                </PublicRoute>
+              </AuthLayout>
             }
           />
 
-          {/* PROTECTED ROUTES */}
+          {/* 🔒 PROTECTED PAGES */}
           <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <MainLayout
+                  drawerOpen={drawerOpen}
+                  setDrawerOpen={setDrawerOpen}
+                >
+                  <Dashboard />
+                </MainLayout>
               </ProtectedRoute>
             }
           />
@@ -108,7 +99,12 @@ export default function App() {
             path="/wishlist"
             element={
               <ProtectedRoute>
-                <Wishlist />
+                <MainLayout
+                  drawerOpen={drawerOpen}
+                  setDrawerOpen={setDrawerOpen}
+                >
+                  <Wishlist />
+                </MainLayout>
               </ProtectedRoute>
             }
           />
@@ -117,7 +113,12 @@ export default function App() {
             path="/checkout"
             element={
               <ProtectedRoute>
-                <Checkout />
+                <MainLayout
+                  drawerOpen={drawerOpen}
+                  setDrawerOpen={setDrawerOpen}
+                >
+                  <Checkout />
+                </MainLayout>
               </ProtectedRoute>
             }
           />
@@ -126,7 +127,12 @@ export default function App() {
             path="/products/:id"
             element={
               <ProtectedRoute>
-                <ProductDetail />
+                <MainLayout
+                  drawerOpen={drawerOpen}
+                  setDrawerOpen={setDrawerOpen}
+                >
+                  <ProductDetail />
+                </MainLayout>
               </ProtectedRoute>
             }
           />

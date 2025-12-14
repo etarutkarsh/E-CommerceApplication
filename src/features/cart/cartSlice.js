@@ -1,30 +1,26 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const GUEST_CART_KEY = "guest_cart_v1";
-const GUEST_WISHLIST_KEY = "guest_wishlist_v1";
 
-// Load guest data
-const loadGuest = (key) => {
+const loadGuest = () => {
   try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : [];
+    return JSON.parse(localStorage.getItem(GUEST_CART_KEY)) || [];
   } catch {
     return [];
   }
 };
 
-// Save guest cart/wishlist
-const saveGuest = (key, value) => {
-  localStorage.setItem(key, JSON.stringify(value));
+const saveGuest = (value) => {
+  localStorage.setItem(GUEST_CART_KEY, JSON.stringify(value));
 };
 
-// Initial state
+// Store if merge has already happened once
+const MERGE_FLAG_KEY = "cart_merge_done";
+
 const initialState = {
-  items: loadGuest(GUEST_CART_KEY),
-  guestKey: GUEST_CART_KEY,
+  items: loadGuest(),
 };
 
-// Slice
 const cartSlice = createSlice({
   name: "cart",
   initialState,
@@ -36,72 +32,73 @@ const cartSlice = createSlice({
       if (found) found.qty += qty;
       else state.items.push({ productId, qty });
 
-      saveGuest(GUEST_CART_KEY, state.items);
+      saveGuest(state.items);
     },
 
     removeFromCart(state, action) {
       state.items = state.items.filter((i) => i.productId !== action.payload);
-      saveGuest(GUEST_CART_KEY, state.items);
+      saveGuest(state.items);
     },
 
     updateQty(state, action) {
       const { productId, qty } = action.payload;
       const found = state.items.find((i) => i.productId === productId);
-
       if (found) found.qty = qty;
-      saveGuest(GUEST_CART_KEY, state.items);
+
+      saveGuest(state.items);
     },
 
     clearCart(state) {
       state.items = [];
-      saveGuest(GUEST_CART_KEY, state.items);
+      saveGuest([]);
     },
-  },
 
-  // Fix: Add reducer for "loadedUserCart"
-  extraReducers: (builder) => {
-    builder.addCase("cart/loadedUserCart", (state, action) => {
+    loadedUserCart(state, action) {
       state.items = action.payload;
-    });
+    },
   },
 });
 
-export const { addToCart, removeFromCart, updateQty, clearCart } =
-  cartSlice.actions;
+export const {
+  addToCart,
+  removeFromCart,
+  updateQty,
+  clearCart,
+  loadedUserCart,
+} = cartSlice.actions;
 
-// Merging guest cart when user logs in
+// -------------------------------
+// 🔥 FIXED MERGE FUNCTION
+// -------------------------------
 export const mergeGuestDataOnLogin = (user) => (dispatch, getState) => {
-  const guestCart = loadGuest(GUEST_CART_KEY) || [];
+  if (!user?.uid) return;
 
-  try {
-    if (user?.uid) {
-      const userCartKey = `cart_${user.uid}`;
+  const MERGE_KEY = `cart_merge_${user.uid}`;
 
-      const existingUserCart =
-        JSON.parse(localStorage.getItem(userCartKey)) || [];
+  // Prevent multiple merges after refresh
+  if (localStorage.getItem(MERGE_KEY) === "done") return;
 
-      const mergedCart = [...existingUserCart];
+  const guestCart = loadGuest();
+  const userCartKey = `cart_${user.uid}`;
 
-      // Merge guest cart
-      guestCart.forEach((g) => {
-        const idx = mergedCart.findIndex((x) => x.productId === g.productId);
+  const existingUserCart = JSON.parse(localStorage.getItem(userCartKey)) || [];
 
-        if (idx >= 0) mergedCart[idx].qty += g.qty;
-        else mergedCart.push(g);
-      });
+  const mergedCart = [...existingUserCart];
 
-      // Save merged data under user's cart
-      localStorage.setItem(userCartKey, JSON.stringify(mergedCart));
+  // Merge guest cart once
+  guestCart.forEach((g) => {
+    const idx = mergedCart.findIndex((x) => x.productId === g.productId);
+    if (idx >= 0) mergedCart[idx].qty += g.qty;
+    else mergedCart.push(g);
+  });
 
-      // Remove old guest cart
-      localStorage.removeItem(GUEST_CART_KEY);
+  localStorage.setItem(userCartKey, JSON.stringify(mergedCart));
+  localStorage.removeItem(GUEST_CART_KEY);
 
-      // Dispatch merged data
-      dispatch({ type: "cart/loadedUserCart", payload: mergedCart });
-    }
-  } catch (e) {
-    console.error(e);
-  }
+  // Mark merge as done so it NEVER runs again
+  localStorage.setItem(MERGE_KEY, "done");
+
+  dispatch(loadedUserCart(mergedCart));
 };
 
 export default cartSlice.reducer;

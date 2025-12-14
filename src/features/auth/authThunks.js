@@ -26,6 +26,38 @@ export const signupWithEmail = createAsyncThunk(
     }
   }
 );
+export const signupAndSaveProfile = createAsyncThunk(
+  "auth/signupAndSaveProfile",
+  async (data, { rejectWithValue }) => {
+    try {
+      const { email, password, username } = data;
+
+      // 1. Create Firebase Auth user
+      const res = await fbCreateUser(auth, email, password);
+      const uid = res.user.uid;
+
+      // 2. Check username availability
+      const usernameRef = doc(db, "usernames", username);
+      const snap = await getDoc(usernameRef);
+      if (snap.exists()) return rejectWithValue("Username already taken");
+
+      // 3. Save profile
+      await setDoc(doc(db, "users", uid), {
+        uid,
+        ...data,
+        createdAt: serverTimestamp(),
+      });
+
+      // 4. Map username → uid
+      await setDoc(usernameRef, { uid, email });
+
+      return { uid, ...data };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 
 // 2) SAVE USER PROFILE TO FIRESTORE
 export const saveUserDetails = createAsyncThunk(

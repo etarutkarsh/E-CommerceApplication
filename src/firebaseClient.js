@@ -3,6 +3,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import {
+  getFirestore,
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
@@ -25,11 +26,7 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Firebase services
 export const auth = getAuth(app);
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
-});
+export const db = getFirestore(app);
 
 // Optional analytics (browser only)
 export const analytics =

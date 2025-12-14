@@ -1,8 +1,7 @@
 // src/features/auth/AuthProvider.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 
-import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -16,84 +15,60 @@ import {
 
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebaseClient";
-
 import { setUser as setUserAction } from "./authSlice";
 import { mergeGuestDataOnLogin } from "../cart/cartSlice";
 
-// -------------------------
-// FIREBASE CONFIG
-// -------------------------
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
-};
-
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-
-// Providers
+const auth = getAuth();
 const googleProvider = new GoogleAuthProvider();
 const githubProvider = new GithubAuthProvider();
 
-// -------------------------------------------------------
-// MAIN PROVIDER — ONLY HANDLES AUTH + USER LOADING
-// -------------------------------------------------------
 export default function AuthProvider({ children }) {
   const dispatch = useDispatch();
+  const [authLoaded, setAuthLoaded] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (!fbUser) {
         dispatch(setUserAction(null));
+        setAuthLoaded(true);
         return;
       }
 
-      // Basic Firebase User
-      const firebaseBasic = {
-        uid: fbUser.uid,
-        email: fbUser.email,
-        displayName: fbUser.displayName,
-        provider: fbUser.providerData?.[0]?.providerId,
-      };
-
-      // Try loading Firestore profile (safe)
+      // Load Firestore user document safely
       let profile = {};
-
       try {
-        const ref = doc(db, "users", fbUser.uid);
-        const snap = await getDoc(ref);
+        const snap = await getDoc(doc(db, "users", fbUser.uid));
         if (snap.exists()) profile = snap.data();
       } catch (err) {
-        console.warn("Firestore profile load skipped:", err.message);
+        console.warn("Skipping Firestore load:", err.message);
       }
 
-      const finalUser = { ...firebaseBasic, ...profile };
+      dispatch(
+        setUserAction({
+          uid: fbUser.uid,
+          email: fbUser.email,
+          displayName: fbUser.displayName,
+          ...profile,
+        })
+      );
 
-      // Save user in Redux
-      dispatch(setUserAction(finalUser));
+      dispatch(mergeGuestDataOnLogin({ uid: fbUser.uid }));
 
-      // Merge guest cart -> user cart
-      try {
-        dispatch(mergeGuestDataOnLogin(finalUser));
-      } catch (err) {
-        console.warn("Cart merge failed:", err.message);
-      }
+      setAuthLoaded(true);
     });
 
     return () => unsubscribe();
   }, [dispatch]);
 
-  return <>{children}</>;
+  // 🚀 Prevent screen flicker: show blank until auth is loaded
+  if (!authLoaded) return null;
+
+  return children;
 }
 
-// -------------------------------------------------------
+// -------------------------------------------
 // AUTH HELPERS
-// -------------------------------------------------------
+// -------------------------------------------
 export const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
 export const loginWithGithub = () => signInWithPopup(auth, githubProvider);
 export const logoutUser = () => signOut(auth);

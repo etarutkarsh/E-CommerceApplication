@@ -24,7 +24,7 @@ const wishlistSlice = createSlice({
   initialState,
   reducers: {
     addToWishlist(state, action) {
-      const id = Number(action.payload);
+      const id = String(action.payload);
 
       if (!state.items.includes(id)) {
         state.items.push(id);

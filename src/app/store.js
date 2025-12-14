@@ -14,3 +14,5 @@ export const store = configureStore({
     wishlist: wishlistReducer,
   },
 });
+export const RootState = store.getState;
+export const AppDispatch = store.dispatch;

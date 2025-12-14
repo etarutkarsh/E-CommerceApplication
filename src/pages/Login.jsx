@@ -1,6 +1,9 @@
 // src/pages/Login.jsx
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
+import { getAuth } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
+
 
 import { loginUser } from "../features/auth/authThunks";
 import {
@@ -10,6 +13,7 @@ import {
 
 export default function Login() {
   const dispatch = useDispatch();
+const navigate = useNavigate();
 
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -28,15 +32,15 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await dispatch(loginUser({ emailOrUsername, password }));
+      const res = dispatch(loginUser({ emailOrUsername, password }));
 
       if (res.meta.requestStatus === "fulfilled") {
-        window.location.href = "/dashboard";
+        navigate("/dashboard");
       } else {
         alert("Login Failed: " + res.payload);
       }
     } catch (e) {
-      alert("Login Failed: " + e.message);
+      console.error("Login Failed: " + e.message);
     }
 
     setLoading(false);
@@ -49,6 +53,7 @@ export default function Login() {
     try {
       setOauthLoading(true);
       await loginWithGoogle(); // Firebase popup
+      alert("Logged in with Google!");
       window.location.href = "/dashboard";
     } catch (err) {
       alert("Google login failed: " + err.message);
@@ -63,6 +68,7 @@ export default function Login() {
     try {
       setOauthLoading(true);
       await loginWithGithub(); // Firebase popup
+      alert("Logged in with GitHub!");
       window.location.href = "/dashboard";
     } catch (err) {
       alert("GitHub login failed: " + err.message);
@@ -112,7 +118,7 @@ export default function Login() {
 
       {/* CREATE ACCOUNT */}
       <button
-        onClick={() => (window.location.href = "/signup-details")}
+        onClick={() => (window.location.href = "/signup")}
         style={{
           width: "100%",
           padding: 12,

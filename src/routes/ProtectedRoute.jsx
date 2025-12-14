@@ -4,7 +4,13 @@ import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
 
 export default function ProtectedRoute({ children }) {
-  const user = useSelector((s) => s.auth.user);
+  const { user, loading } = useSelector((s) => s.auth);
+
+  if (loading) {
+    return <LoadingFallback />;
+  } // wait for AuthProvider to finish
+
   if (!user) return <Navigate to="/login" replace />;
+
   return children;
 }

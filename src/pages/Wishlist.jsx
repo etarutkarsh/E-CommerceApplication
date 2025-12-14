@@ -20,8 +20,9 @@ export default function Wishlist() {
       <div className="products-grid">
         {wishlistIds.map((id) => {
           const product = productsById[id];
-          if (!product) return null;
-
+          if (!product || Object.keys(product).length === 0) {
+            return <h3>Loading products...</h3>;
+          }
           return (
             <div key={id} style={{ position: "relative" }}>
               <ProductCard product={product} />

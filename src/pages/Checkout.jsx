@@ -6,8 +6,10 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   clearCart,
-  updateQty, // ← YOU MUST ADD THIS IN cartSlice
+  updateQty,
+  removeFromCart,
 } from "../features/cart/cartSlice";
+
 import { useNavigate } from "react-router-dom";
 
 export default function Checkout() {
@@ -146,21 +148,18 @@ return (
                       </button>
 
                       {/* REMOVE BUTTON */}
-                      <Button
-                        variant="contained"
-                        color="error"
-                        size="small"
+                      <button
+                        className="remove-btn"
                         onClick={() => dispatch(removeFromCart(it.productId))}
-                        sx={{ marginLeft: "12px", height: "36px" }}
+                        style={{ color: "red", marginLeft: 10 }}
                       >
                         Remove
-                      </Button>
+                      </button>
                     </div>
                   )}
                 </div>
 
                 <p className="item-total">₹{p.price * it.qty}</p>
-                
               </li>
             );
           })}

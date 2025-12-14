@@ -1,7 +1,7 @@
 // src/components/Header.jsx
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-
+import { cleanupLocalStorage } from "../utils/logoutCleanup";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
@@ -10,6 +10,8 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Avatar from "@mui/material/Avatar";
 import Fade from "@mui/material/Fade";
+import { logoutUser } from "../features/auth/AuthProvider";
+
 
 import MenuIcon from "@mui/icons-material/Menu";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
@@ -39,11 +41,12 @@ export default function Header({ onOpenCart }) {
     user?.displayName ||
     (user?.email ? user.email.split("@")[0] : "Guest");
 
-  const handleLogout = () => {
-    dispatch(logout());
-    closeUserMenu();
-    window.location.href = "/login";
-  };
+const handleLogout = async () => {
+  await logoutUser();
+  dispatch(logout());
+  cleanupLocalStorage(user?.uid);
+  window.location.replace("/");
+};
 
   return (
     <>
@@ -58,66 +61,31 @@ export default function Header({ onOpenCart }) {
           zIndex: 3000,
         }}
       >
-        <Toolbar sx={{ display: "flex", alignItems: "center" }}>
-          {/* MOBILE MENU */}
-          <IconButton
-            sx={{ display: { xs: "flex", md: "none" }, mr: 1 }}
-            onClick={() => setMobileMenuOpen(true)}
-          >
-            <MenuIcon sx={{ color: "#000" }} />
-          </IconButton>
-
-          {/* CENTER LOGO */}
-          <Typography
-            variant="h6"
-            onClick={() => (window.location.href = "/dashboard")}
-            sx={{
-              flexGrow: 1,
-              cursor: "pointer",
-              textAlign: "center",
-              fontWeight: 800,
-              fontSize: "1.7rem",
-              background: "linear-gradient(45deg, #d4af37, #f5e6b8)",
-              WebkitBackgroundClip: "text",
-              color: "transparent",
-              letterSpacing: "1px",
+        <Toolbar
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "auto 1fr auto",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
+          {/* LEFT SECTION */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
             }}
           >
-            Etar-Luxury
-          </Typography>
-
-          {/* RIGHT ICONS */}
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {/* Theme Toggle */}
-            <ThemeToggle />
-
-            {/* Wishlist */}
-            <div
-              className="wishlist-wrapper"
-              onMouseEnter={() => setWishlistOpen(true)}
-              onMouseLeave={() => setWishlistOpen(false)}
-              onClick={() => (window.location.href = "/wishlist")}
+            {/* MOBILE MENU */}
+            <IconButton
+              sx={{ display: { xs: "flex", md: "none" } }}
+              onClick={() => setMobileMenuOpen(true)}
             >
-              <IconButton sx={{ color: "#000" }}>
-                <FavoriteBorderIcon />
-              </IconButton>
+              <MenuIcon sx={{ color: "#000" }} />
+            </IconButton>
 
-              {wishlistOpen && <WishlistDropdown />}
-            </div>
-
-            {/* Cart */}
-           <IconButton sx={{ color: "#000" }} onClick={onOpenCart}>
-  <ShoppingCartIcon />
-</IconButton>
-
-              {cartOpen && (
-                <CartDrawer
-                  open={cartOpen}
-                  onClose={() => setCartOpen(false)}
-                />
-              )}
-
-            {/* Avatar */}
+            {/* USER */}
             {user && (
               <IconButton onClick={openUserMenu}>
                 <Avatar
@@ -134,37 +102,85 @@ export default function Header({ onOpenCart }) {
               </IconButton>
             )}
 
-            <Menu
-              anchorEl={menuAnchor}
-              open={Boolean(menuAnchor)}
-              onClose={closeUserMenu}
-              TransitionComponent={Fade}
-              PaperProps={{
-                elevation: 6,
-                sx: {
-                  mt: 1.5,
-                  borderRadius: "16px",
-                  padding: "6px",
-                  minWidth: 160,
-                  zIndex: 99999,
-                  background: "rgba(255,255,255,0.9)",
-                  backdropFilter: "blur(12px)",
-                },
-              }}
+            {/* CART */}
+            <IconButton sx={{ color: "#000" }} onClick={onOpenCart}>
+              <ShoppingCartIcon />
+            </IconButton>
+
+            {/* WISHLIST */}
+            <div
+              className="wishlist-wrapper"
+              onMouseEnter={() => setWishlistOpen(true)}
+              onMouseLeave={() => setWishlistOpen(false)}
+              onClick={() => (window.location.href = "/wishlist")}
             >
-              <MenuItem onClick={() => (window.location.href = "/settings")}>
-                Settings
-              </MenuItem>
-              <MenuItem
-                onClick={() => (window.location.href = "/edit-profile")}
-              >
-                Edit Profile
-              </MenuItem>
-              <MenuItem onClick={handleLogout} sx={{ color: "red" }}>
-                Logout
-              </MenuItem>
-            </Menu>
+              <IconButton sx={{ color: "#000" }}>
+                <FavoriteBorderIcon />
+              </IconButton>
+
+              {wishlistOpen && <WishlistDropdown />}
+            </div>
           </div>
+
+          {/* CENTER LOGO */}
+          <Typography
+            variant="h6"
+            onClick={() => (window.location.href = "/dashboard")}
+            sx={{
+              justifySelf: "center",
+              cursor: "pointer",
+              fontWeight: 800,
+              fontSize: "1.7rem",
+              background: "linear-gradient(45deg, #d4af37, #f5e6b8)",
+              WebkitBackgroundClip: "text",
+              color: "transparent",
+              letterSpacing: "1px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Etar-Luxury
+          </Typography>
+
+          {/* RIGHT SECTION */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+            }}
+          >
+            <ThemeToggle />
+          </div>
+
+          {/* USER MENU */}
+          <Menu
+            anchorEl={menuAnchor}
+            open={Boolean(menuAnchor)}
+            onClose={closeUserMenu}
+            TransitionComponent={Fade}
+            PaperProps={{
+              elevation: 6,
+              sx: {
+                mt: 1.5,
+                borderRadius: "16px",
+                padding: "6px",
+                minWidth: 160,
+                zIndex: 99999,
+                background: "rgba(255,255,255,0.9)",
+                backdropFilter: "blur(12px)",
+              },
+            }}
+          >
+            <MenuItem onClick={() => (window.location.href = "/settings")}>
+              Settings
+            </MenuItem>
+            <MenuItem onClick={() => (window.location.href = "/edit-profile")}>
+              Edit Profile
+            </MenuItem>
+            <MenuItem onClick={handleLogout} sx={{ color: "red" }}>
+              Logout
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
     </>
